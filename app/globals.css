@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+@theme {
+  /* palette — "midnight vault" */
+  --color-night-0: #04070e;
+  --color-night-1: #0a1224;
+  --color-night-2: #101c38;
+  --color-night-3: #16244a;
+  --color-ink: #f4f6fb;
+  --color-muted: #8b95ad;
+  --color-faint: #5b657f;
+
+  --color-gold-1: #f9e7a8;
+  --color-gold-2: #eac85f;
+  --color-gold-3: #c9962e;
+  --color-gold-4: #8a6a1b;
+
+  --color-mint: #35d99a;
+  --color-rose: #fb7185;
+  --color-saffron: #fbbf24;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-playfair), Georgia, serif;
+
+  --shadow-card: 0 18px 50px -18px rgb(0 0 0 / 0.65);
+  --shadow-gold: 0 12px 34px -10px rgb(201 150 46 / 0.45);
+
+  --animate-shimmer: shimmer 2.6s linear infinite;
+  --animate-ticker: ticker 22s linear infinite;
+  --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-pop: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-pulse-soft: pulseSoft 2.4s ease-in-out infinite;
+
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pulseSoft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+}
+
+html {
+  background: var(--color-night-0);
+}
+
+body {
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgb(201 150 46 / 0.14), transparent 60%),
+    radial-gradient(90% 50% at 100% 0%, rgb(38 68 140 / 0.22), transparent 55%),
+    var(--color-night-0);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+::selection {
+  background: rgb(234 200 95 / 0.35);
+}
+
+/* ---------- signature utilities ---------- */
+
+.gold-text {
+  background: linear-gradient(100deg, #f9e7a8 0%, #eac85f 38%, #c9962e 62%, #f5dd90 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gold-text-animated {
+  background: linear-gradient(100deg, #f9e7a8, #eac85f, #c9962e, #f9e7a8);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: var(--animate-shimmer);
+}
+
+.gold-bg {
+  background: linear-gradient(135deg, #f6df8e 0%, #e0b84a 45%, #b4841f 100%);
+}
+
+/* fine diagonal grain layered over gold surfaces — reads as brushed metal */
+.gold-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.gold-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      115deg,
+      rgb(255 255 255 / 0.09) 0 1px,
+      transparent 1px 7px
+    ),
+    linear-gradient(100deg, transparent 30%, rgb(255 252 240 / 0.28) 48%, transparent 62%);
+  mix-blend-mode: soft-light;
+}
+
+/* slow light sweep across the vault hero */
+.vault-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgb(249 231 168 / 0.07) 48%,
+    rgb(249 231 168 / 0.14) 52%,
+    transparent 65%
+  );
+  background-size: 250% 100%;
+  animation: sweep 7s ease-in-out infinite;
+}
+@keyframes sweep {
+  0%, 100% { background-position: 120% 0; }
+  50% { background-position: -20% 0; }
+}
+
+.card {
+  background: linear-gradient(160deg, rgb(22 36 74 / 0.55), rgb(10 18 36 / 0.85));
+  border: 1px solid rgb(148 163 205 / 0.12);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(14px);
+}
+
+.card-gold-edge {
+  border: 1px solid rgb(234 200 95 / 0.22);
+}
+
+.hairline {
+  border-color: rgb(148 163 205 / 0.12);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* confetti pieces */
+.confetti-piece {
+  position: absolute;
+  left: 50%;
+  top: 32%;
+  border-radius: 2px;
+  animation: confettiFly 1.3s cubic-bezier(0.22, 0.8, 0.44, 1) forwards;
+  opacity: 0;
+}
+@keyframes confettiFly {
+  0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg) scale(1.1); }
+  60% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy)))
+      rotate(var(--rot)) scale(0.6);
+  }
+}
+
+/* OTP box caret */
+.otp-box:focus {
+  border-color: rgb(234 200 95 / 0.6);
+  box-shadow: 0 0 0 4px rgb(234 200 95 / 0.12);
+}
+
+/* shake for invalid input */
+.shake {
+  animation: shakeX 0.4s ease;
+}
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
