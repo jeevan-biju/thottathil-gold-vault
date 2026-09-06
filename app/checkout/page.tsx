@@ -28,6 +28,9 @@ const UPI_APPS = [
 
 const VA = { number: "5020 0041 8899 2211", ifsc: "PYSH0002211", name: "THOTTATHIL FASHION JEWELLERY" };
 
+/** Test UPI details — real deep link for mobile testing */
+const TEST_UPI = { vpa: "riswancshino@okhdfcbank", name: "Thottathil Fashion Jewellery", amount: 100 };
+
 export default function Checkout() {
   const router = useRouter();
   const { rates, scheme, ledger, createOrder, settleOrder, failOrder } = useGRS();
@@ -49,17 +52,46 @@ export default function Checkout() {
 
   const payWith = (name: string) => {
     setApp(name);
-    // POST /api/payments/create-order -> Paysharp /order/intent
     const orderId = createOrder("UPI");
     orderRef.current = orderId;
-    setPhase("redirecting");
-    // window.location.href = gpayUrl  (deep link into the UPI app)
+
+    if (name === "Google Pay") {
+      // ── Real UPI deep link flow ──────────────────────────────
+      // Builds a standard UPI intent URL that opens Google Pay on
+      // the user's phone with payee, amount and note pre-filled.
+      // The user only has to tap "Pay" inside Google Pay.
+      setPhase("redirecting");
+      timers.current.push(
+        setTimeout(() => {
+          setPhase("awaiting");
+          // Build UPI deep link
+          const params = new URLSearchParams({
+            pa: TEST_UPI.vpa,
+            pn: TEST_UPI.name,
+            am: String(TEST_UPI.amount),
+            cu: "INR",
+            tn: "GRS Test Payment",
+          });
+          // Navigate to Google Pay (falls back to UPI app chooser)
+          setTimeout(() => {
+            window.location.href = `gpay://upi/pay?${params}`;
+            // Fallback: if gpay:// doesn't open, try universal upi://
+            setTimeout(() => {
+              if (document.visibilityState === "visible") {
+                window.location.href = `upi://pay?${params}`;
+              }
+            }, 2500);
+          }, 120);
+        }, 800),
+      );
+      // No auto-timeout — user taps "I've completed payment" manually
+      return;
+    }
+
+    // ── Simulated flow for PhonePe / Paytm ─────────────────────
     timers.current.push(setTimeout(() => setPhase("awaiting"), 1600));
-    // Paysharp webhook -> Supabase update (simulated settlement)
     timers.current.push(
       setTimeout(() => {
-        // Freeze display values BEFORE settlement — once settleOrder runs,
-        // the ledger shifts and derived monthNo jumps +1 in the next render.
         setCredited({ grams: estGrams, month: months + 1 });
         settleOrder(orderId);
         setPhase("success");
@@ -146,7 +178,7 @@ export default function Checkout() {
                 </span>
                 <span className="flex-1 text-[14px] font-semibold">{a.name}</span>
                 <span className="tabular text-[13px] font-semibold text-muted">
-                  {inr(amount)}
+                  {a.id === "gpay" ? inr(TEST_UPI.amount) : inr(amount)}
                 </span>
               </button>
             ))}
@@ -223,7 +255,10 @@ export default function Checkout() {
                 </div>
                 <p className="mt-5 text-[16px] font-bold">Opening {app}…</p>
                 <p className="mt-2 text-[12px] text-muted">
-                  Approve the collect request of <span className="tabular font-semibold text-ink">{inr(amount)}</span> in your UPI app
+                  {app === "Google Pay"
+                    ? <>Sending <span className="tabular font-semibold text-ink">{inr(TEST_UPI.amount)}</span> to {TEST_UPI.name}</>
+                    : <>Approve the collect request of <span className="tabular font-semibold text-ink">{inr(amount)}</span> in your UPI app</>
+                  }
                 </p>
               </>
             )}
@@ -231,18 +266,49 @@ export default function Checkout() {
             {phase === "awaiting" && (
               <>
                 <div className="mx-auto h-16 w-16 animate-spin rounded-full border-[3px] border-gold-3 border-t-transparent" />
-                <p className="mt-5 text-[16px] font-bold">Confirming with your bank…</p>
-                <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
-                  Gold is credited the instant Paysharp confirms.
-                  <br />
-                  Please don&apos;t close this screen.
+                <p className="mt-5 text-[16px] font-bold">
+                  {app === "Google Pay" ? "Complete payment in Google Pay" : "Confirming with your bank…"}
                 </p>
-                <button
-                  onClick={cancel}
-                  className="mt-5 text-[12px] font-semibold text-faint underline underline-offset-4"
-                >
-                  Cancel payment
-                </button>
+                <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
+                  {app === "Google Pay" ? (
+                    <>
+                      Open Google Pay and pay the collect request of{" "}
+                      <span className="tabular font-semibold text-ink">{inr(TEST_UPI.amount)}</span> sent to{" "}
+                      <span className="font-semibold text-ink">{TEST_UPI.name}</span>.
+                    </>
+                  ) : (
+                    <>
+                      Gold is credited the instant Paysharp confirms.
+                      <br />
+                      Please don&apos;t close this screen.
+                    </>
+                  )}
+                </p>
+                {app === "Google Pay" && (
+                  <button
+                    onClick={() => {
+                      const id = orderRef.current;
+                      if (id) settleOrder(id);
+                      setCredited({
+                        grams: Math.round((TEST_UPI.amount / rates.r22) * 1000) / 1000,
+                        month: months + 1,
+                      });
+                      setPhase("success");
+                      timers.current.push(setTimeout(() => router.push("/dashboard"), 2600));
+                    }}
+                    className="gold-bg shadow-gold mt-5 w-full rounded-2xl py-3.5 text-[14px] font-bold text-night-0 transition-transform active:scale-[0.98]"
+                  >
+                    I&apos;ve completed the payment
+                  </button>
+                )}
+                {app !== "Google Pay" && (
+                  <button
+                    onClick={cancel}
+                    className="mt-5 text-[12px] font-semibold text-faint underline underline-offset-4"
+                  >
+                    Cancel payment
+                  </button>
+                )}
               </>
             )}
 
