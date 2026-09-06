@@ -29,7 +29,7 @@ const UPI_APPS = [
 const VA = { number: "5020 0041 8899 2211", ifsc: "PYSH0002211", name: "THOTTATHIL FASHION JEWELLERY" };
 
 /** Test UPI details — real deep link for mobile testing */
-const TEST_UPI = { vpa: "riswancshino@okhdfcbank", name: "Thottathil Fashion Jewellery", amount: 100 };
+const TEST_UPI = { vpa: "qr.thottath@sib", name: "Thottathil Fashion Jewellery", amount: 100 };
 
 export default function Checkout() {
   const router = useRouter();
