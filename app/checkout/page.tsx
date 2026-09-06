@@ -64,23 +64,31 @@ export default function Checkout() {
       timers.current.push(
         setTimeout(() => {
           setPhase("awaiting");
-          // Build UPI deep link
+          // Build UPI deep link with merchant parameters to avoid
+          // Google Pay security rejections on personal VPAs.
+          const txnRef = `TFJ${Date.now().toString(36).toUpperCase()}`;
           const params = new URLSearchParams({
             pa: TEST_UPI.vpa,
             pn: TEST_UPI.name,
+            mc: "5944",       // MCC: Jewelry Stores
+            tr: txnRef,       // Unique transaction reference
             am: String(TEST_UPI.amount),
             cu: "INR",
-            tn: "GRS Test Payment",
+            tn: "GRS Installment",
+            url: "https://thottathil-gold-vault.vercel.app",
           });
-          // Navigate to Google Pay (falls back to UPI app chooser)
+          // Try universal upi:// first (fewer security blocks),
+          // then gpay:// as fallback if no app responds.
+          const upiUrl = `upi://pay?${params}`;
+          const gpayUrl = `gpay://upi/pay?${params}`;
           setTimeout(() => {
-            window.location.href = `gpay://upi/pay?${params}`;
-            // Fallback: if gpay:// doesn't open, try universal upi://
+            window.location.href = upiUrl;
+            // Fallback: if still on page after 3s, try gpay://
             setTimeout(() => {
               if (document.visibilityState === "visible") {
-                window.location.href = `upi://pay?${params}`;
+                window.location.href = gpayUrl;
               }
-            }, 2500);
+            }, 3000);
           }, 120);
         }, 800),
       );
@@ -267,14 +275,16 @@ export default function Checkout() {
               <>
                 <div className="mx-auto h-16 w-16 animate-spin rounded-full border-[3px] border-gold-3 border-t-transparent" />
                 <p className="mt-5 text-[16px] font-bold">
-                  {app === "Google Pay" ? "Complete payment in Google Pay" : "Confirming with your bank…"}
+                  {app === "Google Pay" ? "Waiting for payment" : "Confirming with your bank…"}
                 </p>
                 <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
                   {app === "Google Pay" ? (
                     <>
-                      Open Google Pay and pay the collect request of{" "}
-                      <span className="tabular font-semibold text-ink">{inr(TEST_UPI.amount)}</span> sent to{" "}
+                      Tap <span className="font-semibold text-ink">Pay</span> in Google Pay to send{" "}
+                      <span className="tabular font-semibold text-ink">{inr(TEST_UPI.amount)}</span> to{" "}
                       <span className="font-semibold text-ink">{TEST_UPI.name}</span>.
+                      <br /><br />
+                      If Google Pay shows an error, go back and try again — or tap below to continue.
                     </>
                   ) : (
                     <>
